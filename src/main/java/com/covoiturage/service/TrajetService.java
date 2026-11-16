@@ -21,4 +21,12 @@ public interface TrajetService {
     void checkAndUpdateTrajetStatus(Trajet trajet);
 
     List<ReservationResponse> getReservationsByTrajet(Long trajetId, Long requestingDriverId);
+
+    org.springframework.data.domain.Page<com.covoiturage.dto.response.TrajetSearchResponse> searchTrajets(
+            String villeDepart,
+            String villeArrivee,
+            java.time.LocalDate dateDepart,
+            Integer placesDemandees,
+            java.math.BigDecimal maxPrix,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -13,24 +13,31 @@ import com.covoiturage.dto.request.PointArretRequest;
 import com.covoiturage.dto.request.TrajetCreateRequest;
 import com.covoiturage.dto.response.ReservationResponse;
 import com.covoiturage.dto.response.TrajetDetailResponse;
+import com.covoiturage.dto.response.TrajetSearchResponse;
+import com.covoiturage.dto.response.TrajetSearchResult;
 import com.covoiturage.dto.response.TrajetSummaryResponse;
-import com.covoiturage.exception.BusinessConflictException;
 import com.covoiturage.exception.BusinessValidationException;
 import com.covoiturage.exception.ForbiddenOperationException;
 import com.covoiturage.exception.ResourceNotFoundException;
+import com.covoiturage.mapper.ConducteurMapper;
 import com.covoiturage.mapper.PointArretMapper;
 import com.covoiturage.mapper.ReservationMapper;
 import com.covoiturage.mapper.TrajetMapper;
+import com.covoiturage.mapper.VehiculeMapper;
 import com.covoiturage.service.TrajetService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
@@ -47,6 +54,8 @@ public class TrajetServiceImpl implements TrajetService {
     private final TrajetMapper trajetMapper;
     private final PointArretMapper pointArretMapper;
     private final ReservationMapper reservationMapper;
+    private final ConducteurMapper conducteurMapper;
+    private final VehiculeMapper vehiculeMapper;
 
     @Override
     @Transactional
@@ -240,5 +249,61 @@ public class TrajetServiceImpl implements TrajetService {
         return reservationRepository.findByTrajetIdWithDetails(trajetId).stream()
                 .map(reservationMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public Page<TrajetSearchResponse> searchTrajets(
+            String villeDepart,
+            String villeArrivee,
+            LocalDate dateDepart,
+            Integer placesDemandees,
+            BigDecimal maxPrix,
+            Pageable pageable) {
+
+        if (villeDepart == null || villeDepart.trim().isEmpty()) {
+            throw new BusinessValidationException("La ville de départ est obligatoire pour la recherche");
+        }
+        if (villeArrivee == null || villeArrivee.trim().isEmpty()) {
+            throw new BusinessValidationException("La ville d'arrivée est obligatoire pour la recherche");
+        }
+        if (dateDepart == null) {
+            throw new BusinessValidationException("La date de départ est obligatoire pour la recherche");
+        }
+
+        int requiredSeats = (placesDemandees != null && placesDemandees > 0) ? placesDemandees : 1;
+        LocalDateTime startOfDay = dateDepart.atStartOfDay();
+        LocalDateTime endOfDay = dateDepart.atTime(LocalTime.MAX);
+
+        log.info("Recherche de trajets : départ='{}', arrivée='{}', date={}, places={}, maxPrix={}",
+                villeDepart, villeArrivee, dateDepart, requiredSeats, maxPrix);
+
+        Page<TrajetSearchResult> results = trajetRepository.searchTrajets(
+                villeDepart.trim(),
+                villeArrivee.trim(),
+                startOfDay,
+                endOfDay,
+                requiredSeats,
+                maxPrix,
+                pageable);
+
+        log.info("Recherche terminée : {} trajet(s) trouvé(s)", results.getTotalElements());
+
+        return results.map(res -> {
+            Trajet t = res.trajet();
+            int placesRestantes = Math.max(0, (int) (t.getPlacesProposees() - res.reservedSeats()));
+            return new TrajetSearchResponse(
+                    t.getId(),
+                    res.pointDepart().getVille(),
+                    res.pointArrivee().getVille(),
+                    res.pointDepart().getHeurePassage(),
+                    res.pointArrivee().getHeurePassage(),
+                    res.prixSegment().setScale(2, RoundingMode.HALF_UP),
+                    placesRestantes,
+                    t.getStatut(),
+                    conducteurMapper.toResponse(t.getConducteur()),
+                    vehiculeMapper.toResponse(t.getVehicule()),
+                    pointArretMapper.toResponseList(t.getPointsArret())
+            );
+        });
     }
 }
