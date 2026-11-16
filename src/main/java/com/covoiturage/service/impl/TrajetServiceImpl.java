@@ -4,6 +4,7 @@ import com.covoiturage.domain.entity.Conducteur;
 import com.covoiturage.domain.entity.PointArret;
 import com.covoiturage.domain.entity.Trajet;
 import com.covoiturage.domain.entity.Vehicule;
+import com.covoiturage.domain.enums.StatutReservation;
 import com.covoiturage.domain.enums.StatutTrajet;
 import com.covoiturage.domain.repository.ConducteurRepository;
 import com.covoiturage.domain.repository.ReservationRepository;
@@ -16,6 +17,7 @@ import com.covoiturage.dto.response.TrajetDetailResponse;
 import com.covoiturage.dto.response.TrajetSearchResponse;
 import com.covoiturage.dto.response.TrajetSearchResult;
 import com.covoiturage.dto.response.TrajetSummaryResponse;
+import com.covoiturage.exception.BusinessConflictException;
 import com.covoiturage.exception.BusinessValidationException;
 import com.covoiturage.exception.ForbiddenOperationException;
 import com.covoiturage.exception.ResourceNotFoundException;
@@ -249,6 +251,76 @@ public class TrajetServiceImpl implements TrajetService {
         return reservationRepository.findByTrajetIdWithDetails(trajetId).stream()
                 .map(reservationMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public TrajetDetailResponse terminerTrajet(Long trajetId, Long requestingDriverId) {
+        Trajet trajet = trajetRepository.findByIdWithDetails(trajetId)
+                .orElseThrow(() -> {
+                    log.warn("Trajet introuvable pour clôture : id={}", trajetId);
+                    return new ResourceNotFoundException("Trajet non trouvé avec l'identifiant : " + trajetId);
+                });
+
+        if (requestingDriverId != null && !trajet.getConducteur().getId().equals(requestingDriverId)) {
+            log.warn("Action interdite : conducteur {} a tenté de terminer le trajet {} du conducteur {}",
+                    requestingDriverId, trajetId, trajet.getConducteur().getId());
+            throw new ForbiddenOperationException("Vous ne pouvez terminer que vos propres trajets");
+        }
+
+        if (trajet.getStatut() == StatutTrajet.TERMINE || trajet.getStatut() == StatutTrajet.ANNULE) {
+            log.warn("Refus de terminer le trajet {} : statut final déjà atteint ({})", trajetId, trajet.getStatut());
+            throw new BusinessConflictException("Le trajet est déjà dans un statut final : " + trajet.getStatut());
+        }
+
+        // Règle 9 : Terminer un trajet : uniquement après son heure de départ (Scénario 9: avant l'heure de départ -> 409)
+        if (!LocalDateTime.now().isAfter(trajet.getDateDepart())) {
+            log.warn("Refus de terminer le trajet {} : heure de départ non dépassée (départ: {}, maintenant: {})",
+                    trajetId, trajet.getDateDepart(), LocalDateTime.now());
+            throw new BusinessConflictException("Un trajet ne peut être terminé qu'après son heure de départ");
+        }
+
+        trajet.setStatut(StatutTrajet.TERMINE);
+        Trajet updated = trajetRepository.save(trajet);
+        log.info("Trajet {} marqué comme TERMINE avec succès", trajetId);
+
+        return trajetMapper.toDetailResponse(updated, 0);
+    }
+
+    @Override
+    @Transactional
+    public void annulerTrajet(Long trajetId, Long requestingDriverId) {
+        Trajet trajet = trajetRepository.findByIdWithDetails(trajetId)
+                .orElseThrow(() -> {
+                    log.warn("Trajet introuvable pour annulation : id={}", trajetId);
+                    return new ResourceNotFoundException("Trajet non trouvé avec l'identifiant : " + trajetId);
+                });
+
+        if (requestingDriverId != null && !trajet.getConducteur().getId().equals(requestingDriverId)) {
+            log.warn("Action interdite : conducteur {} a tenté d'annuler le trajet {} du conducteur {}",
+                    requestingDriverId, trajetId, trajet.getConducteur().getId());
+            throw new ForbiddenOperationException("Vous ne pouvez annuler que vos propres trajets");
+        }
+
+        if (trajet.getStatut() == StatutTrajet.TERMINE || trajet.getStatut() == StatutTrajet.ANNULE) {
+            log.warn("Refus d'annuler le trajet {} : déjà dans un statut final ({})", trajetId, trajet.getStatut());
+            throw new BusinessConflictException("Impossible d'annuler un trajet déjà dans un statut final : " + trajet.getStatut());
+        }
+
+        // Règle 11 : Toutes ses réservations CONFIRMEE passent à ANNULEE dans la même opération (@Transactional)
+        List<com.covoiturage.domain.entity.Reservation> reservations = reservationRepository.findByTrajetId(trajetId);
+        int canceledCount = 0;
+        for (com.covoiturage.domain.entity.Reservation r : reservations) {
+            if (r.getStatut() == StatutReservation.CONFIRMEE) {
+                r.setStatut(StatutReservation.ANNULEE);
+                reservationRepository.save(r);
+                canceledCount++;
+            }
+        }
+
+        trajet.setStatut(StatutTrajet.ANNULE);
+        trajetRepository.save(trajet);
+        log.info("Trajet {} annulé avec succès avec ses {} réservation(s) confirmée(s) (Scénario 11)", trajetId, canceledCount);
     }
 
     @Override
