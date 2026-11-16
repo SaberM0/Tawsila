@@ -63,4 +63,21 @@ public class TrajetController {
             @org.springframework.data.web.PageableDefault(size = 10) org.springframework.data.domain.Pageable pageable) {
         return ResponseEntity.ok(trajetService.searchTrajets(villeDepart, villeArrivee, dateDepart, places, maxPrix, pageable));
     }
+
+    @PutMapping("/{id}/terminer")
+    @Operation(summary = "Marquer un trajet comme terminé (après son heure de départ)")
+    public ResponseEntity<TrajetDetailResponse> terminerTrajet(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Conducteur-Id", required = false) Long requestingDriverId) {
+        return ResponseEntity.ok(trajetService.terminerTrajet(id, requestingDriverId));
+    }
+
+    @PutMapping("/{id}/annuler")
+    @Operation(summary = "Annuler un trajet et toutes ses réservations associées (conducteur propriétaire)")
+    public ResponseEntity<Void> annulerTrajet(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Conducteur-Id", required = false) Long requestingDriverId) {
+        trajetService.annulerTrajet(id, requestingDriverId);
+        return ResponseEntity.noContent().build();
+    }
 }
