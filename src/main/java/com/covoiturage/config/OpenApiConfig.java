@@ -19,8 +19,8 @@ public class OpenApiConfig {
                         .description("API REST pour la gestion d'une plateforme de covoiturage avec trajets multi-arrêts intermédiaires, " +
                                 "réservation de segments et tarification dynamique - Simplon Maghreb / YouCode.")
                         .contact(new Contact()
-                                .name("YouCode Covoiturage Team")
-                                .email("contact@covoiturage.ma"))
+                                .name("Mouad")
+                                .email("mouadsbaer@gmail.com"))
                         .license(new License().name("Apache 2.0")));
     }
 }

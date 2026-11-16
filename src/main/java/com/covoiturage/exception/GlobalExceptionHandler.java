@@ -93,6 +93,17 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ProblemDetail handleNoResourceFound(org.springframework.web.servlet.resource.NoResourceFoundException ex, HttpServletRequest request) {
+        log.warn("Resource not found [404] on {}: {}", request.getRequestURI(), ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Ressource introuvable : " + request.getRequestURI());
+        problem.setTitle("Resource Not Found");
+        problem.setType(URI.create("urn:problem-type:resource-not-found"));
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGlobalException(Exception ex, HttpServletRequest request) {
         log.error("Internal Server Error [500] on {}: {}", request.getRequestURI(), ex.getMessage(), ex);

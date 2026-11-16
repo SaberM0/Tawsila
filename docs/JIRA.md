@@ -4,7 +4,7 @@
 **Méthodologie** : Scrum / Agile  
 **Durée du Sprint** : 4 jours (2 sprints de 2 jours)  
 **Dates** : 16/11/2026 - 20/11/2026  
-**Équipe** : YouCode Dev Team  
+**Équipe** : Mouad (Lead Developer)  
 
 ---
 
