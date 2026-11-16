@@ -1,0 +1,514 @@
+{
+  "info": {
+    "_postman_id": "covoiturage-multi-etapes-collection-id",
+    "name": "Plateforme Covoiturage Multi-Étapes - YouCode Simplon",
+    "description": "Collection complète couvrant les 11 scénarios de validation du brief et l'ensemble des endpoints CRUD de l'API REST.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "hamidId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "youssefId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "karimId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "salmaId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "imaneId",
+      "value": "3",
+      "type": "string"
+    },
+    {
+      "key": "vehiculeHamidId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "trajetHamidId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "reservationKarimId",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "reservationSalmaId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🎯 11 Scénarios de Validation (Brief)",
+      "item": [
+        {
+          "name": "Scénario 1 : Salma réserve 1 place Settat -> Marrakech (201 ; 50 DH ; 2 places restantes)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Passager-Id", "value": "{{salmaId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passagerId\": 2,\n  \"trajetId\": 1,\n  \"pointMonteeId\": 3,\n  \"pointDescenteId\": 4,\n  \"nombrePlaces\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Montant est de 50 DH', function () { pm.expect(parseFloat(json.montantTotal)).to.eql(50.00); });",
+                  "pm.test('Places restantes est 2', function () { pm.expect(json.placesRestantes).to.eql(2); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 2 : Karim recherche Settat -> Casablanca (200 ; n'apparaît pas - mauvais sens)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trajets/recherche?villeDepart=Settat&villeArrivee=Casablanca&dateDepart=2026-11-19&places=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["trajets", "recherche"],
+              "query": [
+                { "key": "villeDepart", "value": "Settat" },
+                { "key": "villeArrivee", "value": "Casablanca" },
+                { "key": "dateDepart", "value": "2026-11-19" },
+                { "key": "places", "value": "1" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Le trajet de Hamid n\\'apparaît pas dans le mauvais sens', function () { pm.expect(json.totalElements).to.eql(0); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 3 : Karim réserve 2 places Casablanca -> Marrakech (201 ; 160 DH ; trajet COMPLET)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Passager-Id", "value": "{{karimId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passagerId\": 1,\n  \"trajetId\": 1,\n  \"pointMonteeId\": 2,\n  \"pointDescenteId\": 4,\n  \"nombrePlaces\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Montant est de 160 DH', function () { pm.expect(parseFloat(json.montantTotal)).to.eql(160.00); });",
+                  "pm.test('Places restantes est 0 (Trajet COMPLET)', function () { pm.expect(json.placesRestantes).to.eql(0); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 4 : Imane réserve 1 place sur le trajet complet (409 Conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Passager-Id", "value": "{{imaneId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passagerId\": 3,\n  \"trajetId\": 1,\n  \"pointMonteeId\": 1,\n  \"pointDescenteId\": 4,\n  \"nombrePlaces\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () { pm.response.to.have.status(409); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 5 : Karim annule sa réservation 3 jours avant (204 No Content ; trajet redevient PUBLIE)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Passager-Id", "value": "{{karimId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservations/{{reservationKarimId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations", "{{reservationKarimId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 6 : Imane réserve avec montée à Marrakech et descente à Settat (400 ; montée après la descente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Passager-Id", "value": "{{imaneId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passagerId\": 3,\n  \"trajetId\": 1,\n  \"pointMonteeId\": 4,\n  \"pointDescenteId\": 3,\n  \"nombrePlaces\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Message mentionne montée après la descente', function () { pm.expect(json.detail).to.include('montée après la descente'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 7 : Hamid propose 5 places dans un véhicule d'une capacité de 4 (400 ; 4 places au maximum)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Conducteur-Id", "value": "{{hamidId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conducteurId\": 1,\n  \"vehiculeId\": 1,\n  \"placesProposees\": 5,\n  \"pointsArret\": [\n    { \"ville\": \"Rabat\", \"ordre\": 0, \"heurePassage\": \"2026-11-25T10:00:00\", \"prixDepuisDepart\": 0.00 },\n    { \"ville\": \"Casablanca\", \"ordre\": 1, \"heurePassage\": \"2026-11-25T11:15:00\", \"prixDepuisDepart\": 40.00 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trajets",
+              "host": ["{{baseUrl}}"],
+              "path": ["trajets"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () { pm.response.to.have.status(400); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Message indique 4 places au maximum', function () { pm.expect(json.detail).to.include('4 places au maximum'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 8 : Hamid publie avec le véhicule d'un autre conducteur (403 Forbidden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Conducteur-Id", "value": "{{hamidId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conducteurId\": 1,\n  \"vehiculeId\": 2,\n  \"placesProposees\": 3,\n  \"pointsArret\": [\n    { \"ville\": \"Rabat\", \"ordre\": 0, \"heurePassage\": \"2026-11-25T10:00:00\", \"prixDepuisDepart\": 0.00 },\n    { \"ville\": \"Casablanca\", \"ordre\": 1, \"heurePassage\": \"2026-11-25T11:15:00\", \"prixDepuisDepart\": 40.00 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trajets",
+              "host": ["{{baseUrl}}"],
+              "path": ["trajets"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 403 Forbidden', function () { pm.response.to.have.status(403); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 9 : Hamid termine le trajet avant 17:00 le jour du départ (409 Conflict)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-Conducteur-Id", "value": "{{hamidId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trajets/{{trajetHamidId}}/terminer",
+              "host": ["{{baseUrl}}"],
+              "path": ["trajets", "{{trajetHamidId}}", "terminer"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () { pm.response.to.have.status(409); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Message indique trajet ne peut être terminé qu\\'après départ', function () { pm.expect(json.detail).to.include('après son heure de départ'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 10 : Salma annule 2 heures avant le départ (409 Conflict ; délai de 24 h dépassé)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Passager-Id", "value": "{{salmaId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservations/{{reservationSalmaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservations", "{{reservationSalmaId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () { pm.response.to.have.status(409); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Message mentionne délai de 24 h dépassé', function () { pm.expect(json.detail).to.include('délai de 24 h dépassé'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scénario 11 : Hamid annule un trajet qui a deux réservations (204 No Content ; annulés ensemble)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-Conducteur-Id", "value": "{{hamidId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trajets/{{trajetHamidId}}/annuler",
+              "host": ["{{baseUrl}}"],
+              "path": ["trajets", "{{trajetHamidId}}", "annuler"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 204 No Content', function () { pm.response.to.have.status(204); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🚗 Gestion des Conducteurs",
+      "item": [
+        {
+          "name": "Créer un conducteur",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"El Alami\",\n  \"prenom\": \"Tariq\",\n  \"email\": \"tariq.alami@covoiturage.ma\",\n  \"telephone\": \"0667891234\",\n  \"numeroPermis\": \"PERMIS-2024-T\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/conducteurs", "host": ["{{baseUrl}}"], "path": ["conducteurs"] }
+          }
+        },
+        {
+          "name": "Lister les conducteurs (Paginé)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/conducteurs?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["conducteurs"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "10" }] }
+          }
+        },
+        {
+          "name": "Consulter un conducteur par ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/conducteurs/1", "host": ["{{baseUrl}}"], "path": ["conducteurs", "1"] }
+          }
+        },
+        {
+          "name": "Rechercher un conducteur par mot-clé",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/conducteurs/recherche?keyword=Hamid", "host": ["{{baseUrl}}"], "path": ["conducteurs", "recherche"], "query": [{ "key": "keyword", "value": "Hamid" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Gestion des Passagers",
+      "item": [
+        {
+          "name": "Créer un passager",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Kabbaj\",\n  \"prenom\": \"Amina\",\n  \"email\": \"amina.kabbaj@covoiturage.ma\",\n  \"telephone\": \"0661998877\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/passagers", "host": ["{{baseUrl}}"], "path": ["passagers"] }
+          }
+        },
+        {
+          "name": "Lister les passagers (Paginé)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/passagers?page=0&size=10", "host": ["{{baseUrl}}"], "path": ["passagers"], "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "10" }] }
+          }
+        },
+        {
+          "name": "Consulter un passager par ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/passagers/1", "host": ["{{baseUrl}}"], "path": ["passagers", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚙 Gestion des Véhicules",
+      "item": [
+        {
+          "name": "Ajouter un véhicule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"marque\": \"Hyundai\",\n  \"modele\": \"i20\",\n  \"immatriculation\": \"55443-B-6\",\n  \"couleur\": \"Bleu\",\n  \"capacite\": 4,\n  \"conducteurId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/vehicules", "host": ["{{baseUrl}}"], "path": ["vehicules"] }
+          }
+        },
+        {
+          "name": "Lister les véhicules d'un conducteur",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/vehicules/conducteur/1", "host": ["{{baseUrl}}"], "path": ["vehicules", "conducteur", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛣️ Recherche & Détails Trajets",
+      "item": [
+        {
+          "name": "Recherche de trajets multi-étapes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/trajets/recherche?villeDepart=Casablanca&villeArrivee=Marrakech&dateDepart=2026-11-19&places=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["trajets", "recherche"],
+              "query": [
+                { "key": "villeDepart", "value": "Casablanca" },
+                { "key": "villeArrivee", "value": "Marrakech" },
+                { "key": "dateDepart", "value": "2026-11-19" },
+                { "key": "places", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Consulter le détail d'un trajet",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/trajets/1", "host": ["{{baseUrl}}"], "path": ["trajets", "1"] }
+          }
+        }
+      ]
+    }
+  ]
+}
