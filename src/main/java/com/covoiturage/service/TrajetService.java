@@ -22,6 +22,10 @@ public interface TrajetService {
 
     List<ReservationResponse> getReservationsByTrajet(Long trajetId, Long requestingDriverId);
 
+    TrajetDetailResponse terminerTrajet(Long trajetId, Long requestingDriverId);
+
+    void annulerTrajet(Long trajetId, Long requestingDriverId);
+
     org.springframework.data.domain.Page<com.covoiturage.dto.response.TrajetSearchResponse> searchTrajets(
             String villeDepart,
             String villeArrivee,
