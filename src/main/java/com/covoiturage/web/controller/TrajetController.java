@@ -51,4 +51,16 @@ public class TrajetController {
             @RequestHeader(value = "X-Conducteur-Id", required = false) Long requestingDriverId) {
         return ResponseEntity.ok(trajetService.getReservationsByTrajet(id, requestingDriverId));
     }
+
+    @GetMapping("/recherche")
+    @Operation(summary = "Rechercher des trajets entre deux étapes avec calcul automatique du prix de segment et places restantes")
+    public ResponseEntity<org.springframework.data.domain.Page<com.covoiturage.dto.response.TrajetSearchResponse>> searchTrajets(
+            @RequestParam String villeDepart,
+            @RequestParam String villeArrivee,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate dateDepart,
+            @RequestParam(required = false, defaultValue = "1") Integer places,
+            @RequestParam(required = false) java.math.BigDecimal maxPrix,
+            @org.springframework.data.web.PageableDefault(size = 10) org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(trajetService.searchTrajets(villeDepart, villeArrivee, dateDepart, places, maxPrix, pageable));
+    }
 }
