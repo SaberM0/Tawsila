@@ -1,0 +1,83 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam roundcorner 5
+
+enum StatutTrajet {
+    PUBLIE
+    COMPLET
+    TERMINE
+    ANNULE
+}
+
+enum StatutReservation {
+    CONFIRMEE
+    ANNULEE
+}
+
+class Conducteur {
+    - Long id
+    - String nom
+    - String prenom
+    - String email
+    - String telephone
+    - String numeroPermis
+}
+
+class Passager {
+    - Long id
+    - String nom
+    - String prenom
+    - String email
+    - String telephone
+}
+
+class Vehicule {
+    - Long id
+    - String marque
+    - String modele
+    - String immatriculation
+    - String couleur
+    - Integer capacite
+}
+
+class Trajet {
+    - Long id
+    - String villeDepart
+    - String villeArrivee
+    - LocalDateTime dateDepart
+    - Integer placesProposees
+    - StatutTrajet statut
+    + int getPlacesRestantes()
+}
+
+class PointArret {
+    - Long id
+    - String ville
+    - Integer ordre
+    - LocalDateTime heurePassage
+    - BigDecimal prixDepuisDepart
+}
+
+class Reservation {
+    - Long id
+    - Integer nombrePlaces
+    - BigDecimal montantTotal
+    - LocalDateTime dateReservation
+    - StatutReservation statut
+}
+
+Conducteur "1" -- "0..*" Vehicule : possède >
+Conducteur "1" -- "0..*" Trajet : publie >
+Vehicule "1" -- "0..*" Trajet : utilisé pour >
+Trajet "1" *-- "2..*" PointArret : composé de >
+Passager "1" -- "0..*" Reservation : effectue >
+Trajet "1" -- "0..*" Reservation : concerne >
+PointArret "1" <-- "0..*" Reservation : montée
+PointArret "1" <-- "0..*" Reservation : descente
+Trajet ..> StatutTrajet : utilise
+Reservation ..> StatutReservation : utilise
+
+@enduml
