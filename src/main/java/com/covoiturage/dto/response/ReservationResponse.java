@@ -15,5 +15,6 @@ public record ReservationResponse(
         Integer nombrePlaces,
         BigDecimal montantTotal,
         LocalDateTime dateReservation,
-        StatutReservation statut
+        StatutReservation statut,
+        Integer placesRestantes
 ) {}
