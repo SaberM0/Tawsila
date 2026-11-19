@@ -20,7 +20,7 @@ public class OpenApiConfig {
                                 "réservation de segments et tarification dynamique - Simplon Maghreb / YouCode.")
                         .contact(new Contact()
                                 .name("Mouad")
-                                .email("mouadsbaer@gmail.com"))
+                                .email("test123@gmail.com"))
                         .license(new License().name("Apache 2.0")));
     }
 }

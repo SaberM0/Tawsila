@@ -8,12 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,7 +25,6 @@ public class DataInitializer implements CommandLineRunner {
     private final PassagerRepository passagerRepository;
     private final VehiculeRepository vehiculeRepository;
     private final TrajetRepository trajetRepository;
-    private final PointArretRepository pointArretRepository;
     private final ReservationRepository reservationRepository;
 
     @Override

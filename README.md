@@ -1,4 +1,4 @@
-# Plateforme de Covoiturage Multi-Étapes
+# Multi-Stop Carpooling Platform
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-17%2B-orange.svg)](https://www.oracle.com/java/)
@@ -7,85 +7,88 @@
 [![Tests](https://img.shields.io/badge/Tests-JUnit%205%20%7C%20AssertJ-success.svg)](https://junit.org/junit5/)
 [![OpenAPI](https://img.shields.io/badge/Swagger%20UI-OpenAPI%203-yellowgreen.svg)](http://localhost:8080/swagger-ui.html)
 
-Backend API REST complet pour une plateforme de covoiturage innovante permettant la proposition et la réservation de trajets multi-étapes avec tarification dynamique par segment et gestion stricte des règles métier.
+A complete REST API backend for a carpooling platform that supports **multi-stop trips**, **per-segment dynamic pricing**, and strict enforcement of business rules.
 
 ---
 
-## 📋 Table des Matières
+## Table of Contents
 
-1. [Contexte & Objectifs](#-contexte--objectifs)
-2. [Stack Technique](#-stack-technique)
-3. [Architecture Logicielle](#-architecture-logicielle)
-4. [Modèle de Données & Diagramme UML](#-modèle-de-données--diagramme-uml)
-5. [Règles Métier Critiques & Scénarios de Validation](#-règles-métier-critiques--scénarios-de-validation)
-6. [Lancement Rapide](#-lancement-rapide)
-7. [Documentation API & Swagger UI](#-documentation-api--swagger-ui)
-8. [Collection Postman](#-collection-postman)
-9. [Suivi de Projet JIRA & Gestion Git](#-suivi-de-projet-jira--gestion-git)
-10. [Tests Unitaires & Couverture](#-tests-unitaires--couverture)
-
----
-
-## 🎯 Contexte & Objectifs
-
-La particularité de cette plateforme est la gestion des **trajets multi-arrêts intermédiaires**.  
-Un conducteur peut publier un trajet de **Casablanca** vers **Marrakech** avec un arrêt à **Settat**. Les passagers ont la flexibilité de réserver une place sur la totalité du trajet ou sur un segment précis (ex : *Settat → Marrakech*).
-
-### Objectifs Principaux
-* Gérer les conducteurs, passagers et véhicules (règles de propriété et de capacité).
-* Publier des parcours sous forme de points d'arrêt ordonnés chronologiquement avec prix cumulé depuis le départ.
-* Rechercher des trajets entre deux étapes intermédiaires dans le bon sens de circulation via une **requête JPQL unique optimisée**.
-* Calculer automatiquement le montant total des réservations :  
-  $$\text{Montant total} = (\text{prix}_{\text{descente}} - \text{prix}_{\text{montée}}) \times \text{nombre de places}$$
-* Calculer dynamiquement les places restantes sans stockage persistant redondant.
-* Gérer les transitions automatiques et manuelles du cycle de vie des trajets et l'annulation des réservations dans le respect de la règle des 24 heures.
+1. [Overview & Goals](#overview--goals)
+2. [Tech Stack](#tech-stack)
+3. [Architecture](#architecture)
+4. [Data Model & UML Diagram](#data-model--uml-diagram)
+5. [Business Rules & Validation Scenarios](#business-rules--validation-scenarios)
+6. [Quick Start](#quick-start)
+7. [API Documentation & Swagger UI](#api-documentation--swagger-ui)
+8. [Postman Collection](#postman-collection)
+9. [Project Tracking & Git Workflow](#project-tracking--git-workflow)
+10. [Testing](#testing)
 
 ---
 
-## 🛠️ Stack Technique
+## Overview & Goals
 
-* **Langage & SDK** : Java 17 LTS
-* **Framework Backend** : Spring Boot 3.3.4
-  * `spring-boot-starter-web` (API REST)
-  * `spring-boot-starter-data-jpa` (ORM Hibernate)
-  * `spring-boot-starter-validation` (Bean Validation Hibernate Validator)
-  * `springdoc-openapi-starter-webmvc-ui` 2.5.0 (Documentation Swagger / OpenAPI 3)
-* **Persistance** : PostgreSQL 16 (production/docker), H2 Database in-memory (développement local rapide)
-* **Outillage & Mapping** : Lombok & MapStruct 1.5.5.Final avec Records Java pour les DTOs
-* **Gestion des Exceptions** : `@RestControllerAdvice` avec standard RFC 7807 `ProblemDetail`
-* **Journalisation** : SLF4J (`INFO` pour les actions métier, `WARN` pour les refus de règles)
-* **Tests** : JUnit 5, Mockito, AssertJ
+What sets this platform apart is its support for **trips with intermediate stops**. A driver can publish a trip from **Casablanca** to **Marrakech** with a stop in **Settat**. Passengers can book a seat for the whole journey or for any segment of it (e.g. *Settat → Marrakech*).
+
+### Key Features
+
+- Manage drivers, passengers, and vehicles (ownership and capacity rules).
+- Publish trips as chronologically ordered stops, each carrying a cumulative price from the departure point.
+- Search trips between any two stops, respecting the direction of travel, using a **single optimized JPQL query**.
+- Automatically compute the booking total:
+
+  ```
+  total = (price_at_dropoff − price_at_pickup) × number_of_seats
+  ```
+
+- Compute remaining seats dynamically, with no redundant persisted counter.
+- Handle automatic and manual trip lifecycle transitions, and booking cancellation under the 24-hour rule.
 
 ---
 
-## 🏛️ Architecture Logicielle
+## Tech Stack
 
-Le projet adopte une **architecture en couches stricte** garantissant la séparation des responsabilités et la testabilité :
+| Area | Technology |
+| :--- | :--- |
+| Language | Java 17 (LTS) |
+| Framework | Spring Boot 3.3.4 (`web`, `data-jpa`, `validation`) |
+| API docs | springdoc-openapi-starter-webmvc-ui 2.5.0 (Swagger UI / OpenAPI 3) |
+| Persistence | PostgreSQL 16 (production / Docker), H2 in-memory (fast local development) |
+| Tooling | Lombok, MapStruct 1.5.5.Final, Java Records for DTOs |
+| Error handling | `@RestControllerAdvice` with RFC 7807 `ProblemDetail` |
+| Logging | SLF4J (`INFO` for business actions, `WARN` for rule rejections) |
+| Testing | JUnit 5, Mockito, AssertJ |
+
+---
+
+## Architecture
+
+The project follows a **strict layered architecture** for clear separation of concerns and easy testing.
+
+> **Note:** Package, class, and field names (e.g. `Conducteur`, `Trajet`, `PointArret`) are kept in French as in the source code. Equivalents: *Conducteur* = Driver, *Passager* = Passenger, *Vehicule* = Vehicle, *Trajet* = Trip, *PointArret* = Stop, *Reservation* = Booking.
 
 ```
 src/main/java/com/covoiturage/
-├── CovoiturageApplication.java          # Point d'entrée Spring Boot
-├── config/                              # Configuration OpenAPI, DataInitializer
+├── CovoiturageApplication.java   # Spring Boot entry point
+├── config/                       # OpenAPI configuration, DataInitializer
 ├── domain/
-│   ├── entity/                          # Entités JPA (Conducteur, Passager, Vehicule, Trajet, PointArret, Reservation)
-│   ├── enums/                           # Énumérations (StatutTrajet, StatutReservation)
-│   └── repository/                      # Repositories Spring Data JPA & requêtes JPQL
+│   ├── entity/                   # JPA entities (Conducteur, Passager, Vehicule, Trajet, PointArret, Reservation)
+│   ├── enums/                    # StatutTrajet, StatutReservation
+│   └── repository/               # Spring Data JPA repositories & JPQL queries
 ├── dto/
-│   ├── request/                         # Records DTO de requête avec annotations de validation
-│   └── response/                        # Records DTO de réponse client
-├── exception/                           # Exceptions métier et GlobalExceptionHandler (ProblemDetail)
-├── mapper/                              # Mappers MapStruct (Entity <-> DTO Records)
-├── service/                             # Interfaces de service métier
-│   └── impl/                            # Implémentations transactionnelles (@Transactional)
+│   ├── request/                  # Request records with validation annotations
+│   └── response/                 # Response records
+├── exception/                    # Business exceptions and GlobalExceptionHandler (ProblemDetail)
+├── mapper/                       # MapStruct mappers (entity <-> DTO)
+├── service/                      # Business service interfaces
+│   └── impl/                     # Transactional implementations (@Transactional)
 └── web/
-    └── controller/                      # Contrôleurs REST (@RestController)
+    └── controller/               # REST controllers (@RestController)
 ```
 
 ---
 
-## 📊 Modèle de Données & Diagramme UML
-
-### Diagramme de Classes UML (Mermaid)
+## Data Model & UML Diagram
 
 ```mermaid
 classDiagram
@@ -166,131 +169,147 @@ classDiagram
         +StatutReservation statut
     }
 
-    Conducteur "1" --> "0..*" Vehicule : possède
-    Conducteur "1" --> "0..*" Trajet : publie
-    Vehicule "1" <-- "0..*" Trajet : utilise
-    Trajet "1" *-- "2..*" PointArret : contient (ordonné)
-    Passager "1" --> "0..*" Reservation : effectue
-    Trajet "1" --> "0..*" Reservation : concerne
-    PointArret "1" <-- Reservation : point montée
-    PointArret "1" <-- Reservation : point descente
+    Conducteur "1" --> "0..*" Vehicule : owns
+    Conducteur "1" --> "0..*" Trajet : publishes
+    Vehicule "1" <-- "0..*" Trajet : used by
+    Trajet "1" *-- "2..*" PointArret : contains, ordered
+    Passager "1" --> "0..*" Reservation : makes
+    Trajet "1" --> "0..*" Reservation : has
+    PointArret "1" <-- Reservation : pickup point
+    PointArret "1" <-- Reservation : drop-off point
     Trajet ..> StatutTrajet
     Reservation ..> StatutReservation
 ```
 
 ---
 
-## ⚖️ Règles Métier Critiques & Scénarios de Validation
+## Business Rules & Validation Scenarios
 
-### Matrice des Droits & Rôles
-* **Conducteur** : Peut créer son compte, enregistrer ses véhicules, publier des trajets avec ses propres véhicules, consulter les réservations de ses trajets, terminer ou annuler ses trajets. **Ne peut pas réserver de places**.
-* **Passager** : Peut créer son compte, rechercher et consulter des trajets, réserver des places, consulter et annuler ses réservations. **Ne peut pas publier de trajets ni voir les réservations d'autres passagers**.
+### Roles & Permissions
 
-### Validation des 11 Scénarios du Brief
+| Role | Can | Cannot |
+| :--- | :--- | :--- |
+| **Driver** | Create an account, register vehicles, publish trips with their own vehicles, view bookings on their trips, complete or cancel their trips | Book seats |
+| **Passenger** | Create an account, search and view trips, book seats, view and cancel their own bookings | Publish trips, view other passengers' bookings |
 
-| # | Scénario | Données de Test | Résultat Attendu | Statut |
+### Trip Lifecycle
+
+`PUBLIE` → `COMPLET` (when all seats are booked) → back to `PUBLIE` (if a booking is cancelled) → `TERMINE` (completed by the driver after departure) or `ANNULE` (cancelled by the driver).
+
+### The 11 Validation Scenarios
+
+| # | Scenario | Test Data | Expected Result | Status |
 | :-: | :--- | :--- | :--- | :-: |
-| **1** | Salma réserve 1 place Settat → Marrakech | Trajet Hamid (Settat à 70 DH, Marrakech à 120 DH) | **201** ; montant **50 DH** ; **2 places restantes** | ✅ Conforme |
-| **2** | Karim recherche Settat → Casablanca | Trajet Hamid dans le sens inverse (ordre 2 vers ordre 1) | **200** ; le trajet de Hamid **n'apparaît pas** | ✅ Conforme |
-| **3** | Karim réserve 2 places Casablanca → Marrakech | Casa à 40 DH, Marrakech à 120 DH, 2 places | **201** ; montant **160 DH** ; trajet devient **COMPLET** | ✅ Conforme |
-| **4** | Imane réserve 1 place sur le trajet complet | Trajet Hamid devenu COMPLET | **409 Conflict** | ✅ Conforme |
-| **5** | Karim annule sa réservation 3 jours avant | Réservation de Karim annulée 72h avant départ | **204 No Content** ; trajet redevient **PUBLIE** | ✅ Conforme |
-| **6** | Imane réserve avec montée à Marrakech et descente à Settat | Ordre montée (3) > ordre descente (2) | **400 Bad Request** ; montée après la descente | ✅ Conforme |
-| **7** | Hamid propose 5 places dans un véhicule de capacité 4 | Dacia Logan (capacité max : 4) | **400 Bad Request** ; 4 places au maximum | ✅ Conforme |
-| **8** | Hamid publie avec le véhicule d'un autre conducteur | Véhicule appartenant à Youssef | **403 Forbidden** | ✅ Conforme |
-| **9** | Hamid termine le trajet avant 17:00 le jour du départ | Tentative de clôture avant l'heure de départ | **409 Conflict** | ✅ Conforme |
-| **10** | Salma annule 2 heures avant le départ | Tentative d'annulation à moins de 24h du départ | **409 Conflict** ; délai de 24 h dépassé | ✅ Conforme |
-| **11** | Hamid annule un trajet qui a deux réservations | Annulation globale transactionnelle | **204 No Content** ; trajet et réservations annulés en bloc | ✅ Conforme |
+| 1 | Salma books 1 seat Settat → Marrakech | Hamid's trip (Settat at 70 DH, Marrakech at 120 DH) | **201**; total **50 DH**; **2 seats remaining** | ✅ |
+| 2 | Karim searches Settat → Casablanca | Hamid's trip runs the opposite way (stop 2 → stop 1) | **200**; Hamid's trip **does not appear** | ✅ |
+| 3 | Karim books 2 seats Casablanca → Marrakech | Casablanca at 40 DH, Marrakech at 120 DH, 2 seats | **201**; total **160 DH**; trip becomes **COMPLET** | ✅ |
+| 4 | Imane books 1 seat on the full trip | Hamid's trip is now COMPLET | **409 Conflict** | ✅ |
+| 5 | Karim cancels his booking 3 days ahead | Cancellation 72 h before departure | **204 No Content**; trip returns to **PUBLIE** | ✅ |
+| 6 | Imane books with pickup in Marrakech and drop-off in Settat | Pickup order (3) > drop-off order (2) | **400 Bad Request**; pickup is after drop-off | ✅ |
+| 7 | Hamid offers 5 seats in a 4-seat vehicle | Dacia Logan (max capacity: 4) | **400 Bad Request**; 4 seats maximum | ✅ |
+| 8 | Hamid publishes using another driver's vehicle | Vehicle belongs to Youssef | **403 Forbidden** | ✅ |
+| 9 | Hamid completes the trip before 17:00 on departure day | Completion attempted before departure time | **409 Conflict** | ✅ |
+| 10 | Salma cancels 2 hours before departure | Cancellation less than 24 h before departure | **409 Conflict**; 24-hour deadline passed | ✅ |
+| 11 | Hamid cancels a trip that has two bookings | Transactional bulk cancellation | **204 No Content**; trip and bookings cancelled together | ✅ |
 
 ---
 
-## 🚀 Lancement Rapide
+## Quick Start
 
-### Prérequis
-* Java 17+ installé
-* Maven 3.8+ (ou Maven Wrapper)
-* Docker & Docker Compose
+### Prerequisites
 
-### 1. Démarrer PostgreSQL avec Docker Compose
+- Java 17+
+- Maven 3.8+ (or the Maven Wrapper)
+- Docker & Docker Compose
+
+### 1. Start PostgreSQL with Docker Compose
+
 ```bash
 docker-compose up -d
 ```
-> Le conteneur initialise automatiquement la base `covoiturage_db` et injecte plus de 5 enregistrements dans chaque table via `docker/init.sql`.
 
-### 2. Démarrer l'Application Spring Boot
+The container creates the `covoiturage_db` database and loads 5+ records into each table via `docker/init.sql`.
+
+### 2. Start the Spring Boot application
+
 ```bash
-# Avec le profil PostgreSQL (Docker)
+# With the PostgreSQL profile (Docker)
 mvn spring-boot:run -Dspring-boot.run.profiles=postgres
 
-# Ou avec le profil H2 in-memory (prêt à l'emploi)
+# Or with the default in-memory H2 profile (zero setup)
 mvn spring-boot:run
 ```
-L'application démarre sur le port `8080`.  
-Grâce au composant `DataInitializer`, au moins 5 enregistrements sont automatiquement insérés dans chaque table dès le premier démarrage.
+
+The application listens on port `8080`. On first startup, the `DataInitializer` component seeds at least 5 records into each table.
 
 ---
 
-## 📖 Documentation API & Swagger UI
+## API Documentation & Swagger UI
 
-Accédez à la documentation interactive OpenAPI / Swagger UI :
-👉 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**  
-Fichier JSON OpenAPI : **[http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)**
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
 
-### Principaux Endpoints REST
+### Main REST Endpoints
 
-| Méthode | Endpoint | Description | Code Succès |
+| Method | Endpoint | Description | Success |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/conducteurs` | Créer un compte conducteur | `201 Created` |
-| `GET` | `/api/v1/conducteurs` | Lister les conducteurs (paginé) | `200 OK` |
-| `POST` | `/api/v1/passagers` | Créer un profil passager | `201 Created` |
-| `POST` | `/api/v1/vehicules` | Enregistrer un véhicule (capacité 1 à 8) | `201 Created` |
-| `DELETE` | `/api/v1/vehicules/{id}` | Supprimer un véhicule (si aucun trajet) | `204 No Content` |
-| `POST` | `/api/v1/trajets` | Publier un trajet multi-étapes | `201 Created` |
-| `GET` | `/api/v1/trajets/{id}` | Consulter le détail d'un trajet | `200 OK` |
-| `GET` | `/api/v1/trajets/recherche` | Rechercher des trajets entre 2 étapes | `200 OK` |
-| `PUT` | `/api/v1/trajets/{id}/terminer` | Clôturer un trajet (après départ) | `200 OK` |
-| `PUT` | `/api/v1/trajets/{id}/annuler` | Annuler un trajet et ses réservations | `204 No Content` |
-| `POST` | `/api/v1/reservations` | Réserver des places sur un segment | `201 Created` |
-| `DELETE` | `/api/v1/reservations/{id}` | Annuler une réservation (> 24h) | `204 No Content` |
+| `POST` | `/api/v1/conducteurs` | Create a driver account | `201 Created` |
+| `GET` | `/api/v1/conducteurs` | List drivers (paginated) | `200 OK` |
+| `POST` | `/api/v1/passagers` | Create a passenger profile | `201 Created` |
+| `POST` | `/api/v1/vehicules` | Register a vehicle (capacity 1–8) | `201 Created` |
+| `DELETE` | `/api/v1/vehicules/{id}` | Delete a vehicle (only if it has no trips) | `204 No Content` |
+| `POST` | `/api/v1/trajets` | Publish a multi-stop trip | `201 Created` |
+| `GET` | `/api/v1/trajets/{id}` | Get trip details | `200 OK` |
+| `GET` | `/api/v1/trajets/recherche` | Search trips between two stops | `200 OK` |
+| `PUT` | `/api/v1/trajets/{id}/terminer` | Complete a trip (after departure) | `200 OK` |
+| `PUT` | `/api/v1/trajets/{id}/annuler` | Cancel a trip and its bookings | `204 No Content` |
+| `POST` | `/api/v1/reservations` | Book seats on a segment | `201 Created` |
+| `DELETE` | `/api/v1/reservations/{id}` | Cancel a booking (more than 24 h before departure) | `204 No Content` |
+
+Errors follow RFC 7807 (`ProblemDetail`) with status codes `400`, `403`, `404`, and `409`.
 
 ---
 
-## 📮 Collection Postman
+## Postman Collection
 
-Une collection Postman complète et prête à l'emploi est disponible dans le dépôt :  
-📁 `docs/postman/covoiturage-multi-etapes.postman_collection.json`
+A ready-to-use Postman collection is available at:
+`docs/postman/covoiturage-multi-etapes.postman_collection.json`
 
-Elle contient :
-* Un dossier dédié **🎯 11 Scénarios de Validation (Brief)** avec des assertions automatiques sur les statuts HTTP et les corps de réponses JSON.
-* Tous les appels CRUD sur les conducteurs, passagers, véhicules et réservations.
+It includes:
 
----
-
-## 📌 Suivi de Projet JIRA & Gestion Git
-
-* **Fichier de suivi Agile** : `docs/JIRA.md`
-* **Stratégie de Branches Git Flow** :
-  * `main` : Branche de release stable
-  * `develop` : Branche principale d'intégration
-  * `feature/COV-01-initial-project-setup`
-  * `feature/COV-01-gestion-conducteurs`
-  * `feature/COV-03-gestion-passagers`
-  * `feature/COV-04-gestion-vehicules`
-  * `feature/COV-05-publication-trajets`
-  * `feature/COV-06-recherche-trajets`
-  * `feature/COV-07-gestion-reservations`
-  * `feature/COV-08-cycle-de-vie-trajet`
-  * `feature/COV-09-docker-compose-seeding`
-  * `feature/COV-10-tests-unitaires-validation`
-  * `feature/COV-11-documentation-postman-uml`
-* **Nombre de commits** : **+50 commits professionnels** au format Conventional Commits.
+- A dedicated **11 Validation Scenarios** folder with automated assertions on HTTP status codes and JSON response bodies.
+- CRUD requests for drivers, passengers, vehicles, and bookings.
 
 ---
 
-## 🧪 Tests Unitaires & Couverture
+## Project Tracking & Git Workflow
 
-Pour exécuter la suite de tests automatisée :
+- **Agile tracking file:** `docs/JIRA.md`
+- **Branching strategy (Git Flow):**
+  - `main`: stable release branch
+  - `develop`: main integration branch
+  - Feature branches:
+    - `feature/COV-01-initial-project-setup`
+    - `feature/COV-02-driver-management`
+    - `feature/COV-03-passenger-management`
+    - `feature/COV-04-vehicle-management`
+    - `feature/COV-05-trip-publication`
+    - `feature/COV-06-trip-search`
+    - `feature/COV-07-booking-management`
+    - `feature/COV-08-trip-lifecycle`
+    - `feature/COV-09-docker-compose-seeding`
+    - `feature/COV-10-unit-tests-validation`
+    - `feature/COV-11-postman-uml-documentation`
+- **Commits:** 50+ commits following the [Conventional Commits](https://www.conventionalcommits.org/) format.
+
+---
+
+## Testing
+
+Run the full automated test suite:
+
 ```bash
 mvn test
 ```
-Tous les scénarios nominaux et d'erreurs (400, 403, 404, 409) sont validés par JUnit 5, Mockito et AssertJ.
+
+JUnit 5, Mockito, and AssertJ cover both the happy paths and the error cases (400, 403, 404, 409) across all 11 validation scenarios.
