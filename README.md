@@ -5,7 +5,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker%20Compose-Ready-2496ED.svg)](https://www.docker.com/)
 [![Tests](https://img.shields.io/badge/Tests-JUnit%205%20%7C%20AssertJ-success.svg)](https://junit.org/junit5/)
-[![OpenAPI](https://img.shields.io/badge/Swagger%20UI-OpenAPI%203-yellowgreen.svg)](http://localhost:8080/swagger-ui.html)
+[![OpenAPI](https://img.shields.io/badge/Swagger%20UI-OpenAPI%203-yellowgreen.svg)](http://localhost:8080/swagger-ui/index.html)
 
 A complete REST API backend for a carpooling platform that supports **multi-stop trips**, **per-segment dynamic pricing**, and strict enforcement of business rules.
 
@@ -246,8 +246,12 @@ The application listens on port `8080`. On first startup, the `DataInitializer` 
 
 ## API Documentation & Swagger UI
 
-- Swagger UI: <http://localhost:8080/swagger-ui.html>
-- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
+Once the application is running (`mvn spring-boot:run`), interactive API documentation is available at:
+
+- **Swagger UI (Interactive Docs)**: <http://localhost:8080/swagger-ui/index.html> (or simply <http://localhost:8080/>)
+- **OpenAPI 3 JSON Spec**: <http://localhost:8080/v3/api-docs>
+
+> **Note**: These links require the Spring Boot backend to be running locally on port 8080. If the server is not started, your browser will show a connection error (`ERR_CONNECTION_REFUSED`).
 
 ### Main REST Endpoints
 
